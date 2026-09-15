@@ -1,283 +1,184 @@
-# Drug Inventory & Supply Chain Tracking System (CLI MVP v1)
+# Drug Inventory and Supply Chain Management System
 
-A command-line drug inventory and supply chain tracking application built in Python. It manages pharmaceutical stock across central warehouses and healthcare facilities, provides proactive alerts for low stock and expiring medicines, and maintains a complete audit trail of every stock movement.
-
----
-
-## 📌 Problem Statement
-
-In public health networks and hospital supply chains, manual or disjointed inventory management leads to critical challenges:
-- **Stockouts:** Hospitals run out of essential life-saving drugs due to lack of visibility into consumption patterns.
-- **Medicine Expiry & Wastage:** Drugs expire on shelves before distribution because expiry dates are not systematically monitored.
-- **Traceability Gaps:** Difficulties in auditing where medicines were received, where they were distributed, or why quantities changed (e.g., damaged or expired batches).
-
-This system provides a centralized, transparent workflow connecting warehouses, hospitals, stock allocations, patient consumption, and automated alerts.
+A Python-based command-line interface (CLI) application for monitoring and auditing pharmaceutical distribution across regional warehouses and healthcare facilities.
 
 ---
 
-## 🚀 Current Features
+## Overview
 
-* **Medicine Directory:** Register and browse medicines with generic names, strength, dispensing unit, expiry date, and minimum stock thresholds.
-* **Facilities Management:** Maintain lists of central supply warehouses and local hospitals/clinics.
-* **Warehouse Stock Intake:** Add stock batches directly to warehouse inventory.
-* **Inter-Facility Distribution:** Safely transfer stock from a warehouse to a hospital, automatically deducting from the warehouse and crediting the hospital.
-* **Hospital Consumption Tracking:** Record patient dispensing and usage, automatically deducting from hospital inventory.
-* **Categorized Alerts:**
-  - 🟡 **LOW STOCK:** Identifies when warehouse or hospital stock falls to or below a medicine's minimum threshold.
-  - 🟠 **EXPIRING SOON:** Flags medications expiring within the next 30 days.
-  - 🔴 **EXPIRED:** Flags medications that have passed their expiration date.
-* **Executive Dashboard:** Displays instant metrics on total medicines, facilities, inventory records, and active alert counts.
-* **Manual Stock Adjustment:** Account for damaged goods, physical count discrepancies, or losses with mandatory audit reasons.
-* **Stock Movement Audit Trail:** Automatically logs every transaction (`ADD`, `DISTRIBUTE`, `RECEIVE`, `CONSUME`, `ADJUST`) with timestamp, location, signed quantity, and reason.
-* **JSON Data Persistence:** Automatically saves all entities, stock levels, and audit logs to persistent JSON files.
+Public health drug distribution networks frequently encounter stockouts, avoidable medication expiration, and audit discrepancies due to decentralized records. This application provides a unified tracking system that manages the pharmaceutical lifecycle from warehouse intake to hospital consumption, incorporating automated threshold alerts, manual adjustments, and an immutable transaction log.
 
 ---
 
-## 🧠 How the Application Works
+## Core Capabilities
 
-The system operates across a linear, traceable supply chain lifecycle:
+- **Catalog Management**: Register and track medicines with standardized generic names, dosages, units, expiration dates, and safety buffer thresholds.
+- **Multi-Echelon Facility Support**: Model independent storage facilities (warehouses) and dispensing endpoints (hospitals and clinics).
+- **Two-Tier Inventory Ledger**: Separate balance tracking for warehouse stockpiles and hospital floor stock.
+- **Inter-Facility Distribution**: Atomic transfer logic that decrements dispatching warehouse stock and increments receiving hospital stock.
+- **Consumption Logging**: Real-time recording of hospital dispensing to prevent discrepancies between theoretical and physical counts.
+- **Multi-Level Threshold & Expiration Alerts**:
+  - **Low Stock**: Triggers when facility inventory meets or falls below defined safety levels.
+  - **Expiring Soon**: Flags lots expiring within 30 days.
+  - **Expired**: Flags lots that have surpassed their expiration date.
+- **Audited Stock Adjustments**: Record inventory modifications (e.g., damaged goods, physical count reconciliations) with mandatory justification strings.
+- **End-to-End Movement History**: Every state-changing transaction (`ADD`, `DISTRIBUTE`, `RECEIVE`, `CONSUME`, `ADJUST`) is logged with timestamps, facility identifiers, signed quantities, and audit notes.
+- **System Dashboard**: Centralized summary of active catalog entities, facility counts, total stock records, and categorized alert totals.
+- **Flat-File JSON Persistence**: Zero-dependency database layer using structured JSON files.
+
+---
+
+## Architecture and Data Flow
 
 ```text
-               ┌──────────────────────────────┐
-               │    1. Add Medicine Entry     │
-               └──────────────┬───────────────┘
-                              │
-               ┌──────────────▼───────────────┐
-               │  2. Add Warehouse & Hospital │
-               └──────────────┬───────────────┘
-                              │
-               ┌──────────────▼───────────────┐
-               │   3. Add Warehouse Stock     │ (ADD: +Qty to Warehouse)
-               └──────────────┬───────────────┘
-                              │
-               ┌──────────────▼───────────────┐
-               │ 4. Distribute to Hospital    │ (DISTRIBUTE: -Qty from WH)
-               └──────────────┬───────────────┘ (RECEIVE: +Qty to Hosp)
-                              │
-               ┌──────────────▼───────────────┐
-               │  5. Record Consumption      │ (CONSUME: -Qty from Hosp)
-               └──────────────┬───────────────┘
-                              │
-               ┌──────────────▼───────────────┐
-               │ 6. Proactive Alerts / Dash   │ (Checks min_stock & expiry)
-               └──────────────┬───────────────┘
-                              │
-               ┌──────────────▼───────────────┐
-               │  7. Audited Adjustments      │ (ADJUST: +/-Qty with Reason)
-               └──────────────────────────────┘
-                              │
-            Recorded in Stock Movement History
+               +-----------------------+
+               |   Medicine Registry   |
+               +-----------+-----------+
+                           |
+                           v
+               +-----------------------+
+               | Warehouse Intake (ADD)|
+               +-----------+-----------+
+                           |
+                           v
+               +-----------------------+
+               | Distribution Transfer |
+               | (WH: -Qty / Hosp: +Qty|
+               +-----------+-----------+
+                           |
+                           v
+               +-----------------------+
+               | Hospital Consumption  |
+               | (Hosp: -Qty)          |
+               +-----------+-----------+
+                           |
+             +-------------+-------------+
+             |                           |
+             v                           v
++------------------------+   +-----------------------+
+| Real-time Alerts Engine|   | Operational Dashboard |
++------------------------+   +-----------------------+
+             |                           |
+             +-------------+-------------+
+                           |
+                           v
+             +---------------------------+
+             | Transaction Audit History |
+             |   (stock_movements.json)  |
+             +---------------------------+
 ```
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```text
 drug-inventory/
-├── main.py                      # Main application logic, CLI menu, and controllers
-├── README.md                    # Project documentation
-├── .gitignore                   # Git ignore configuration
-└── data/                        # JSON storage directory (database layer)
-    ├── medicines.json           # Catalog of registered medicines
-    ├── warehouses.json          # Registered warehouse facilities
-    ├── hospitals.json           # Registered hospital/clinic facilities
-    ├── inventory.json           # Warehouse stock records
-    ├── hospital_inventory.json  # Hospital stock records
-    └── stock_movements.json     # Complete transaction audit logs
+├── main.py                      # Application entry point, CLI interface, and business logic
+├── README.md                    # Technical documentation
+├── .gitignore                   # Version control exclusion rules
+└── data/                        # File-based persistence layer
+    ├── medicines.json           # Catalog of registered pharmaceutical items
+    ├── warehouses.json          # Warehouse facility records
+    ├── hospitals.json           # Hospital and healthcare center records
+    ├── inventory.json           # Warehouse inventory levels
+    ├── hospital_inventory.json  # Hospital inventory levels
+    └── stock_movements.json     # Append-only transaction audit log
 ```
 
 ---
 
-## 🛠️ Technologies Used
+## Technical Specifications
 
-- **Language:** Python 3 (Python 3.7+)
-- **Standard Libraries:**
-  - `json` — Serialization and persistent file storage
-  - `datetime` (`date`, `datetime`, `timedelta`) — Date parsing, arithmetic for expiry calculations, and ISO-style timestamps
-- **External Dependencies:** None (zero external packages required; runs natively on pure Python)
+- **Runtime**: Python 3.7+
+- **External Dependencies**: None (Standard Library only: `json`, `datetime`)
+- **Storage Format**: Indented JSON flat files
 
 ---
 
-## 📋 Prerequisites & Installation
+## Installation and Execution
 
-### Requirements
-- Python 3.7 or higher installed on your computer.
+### Prerequisites
 
-Check your Python version by opening a terminal and running:
+Verify that Python 3 is installed on your workstation:
+
 ```bash
 python3 --version
 ```
 
-### Installation
+### Setup
 
-1. **Clone the repository:**
+1. Clone the repository:
    ```bash
    git clone https://github.com/divya-3005/drug-inventory.git
-   ```
-
-2. **Navigate into the project directory:**
-   ```bash
    cd drug-inventory
    ```
 
-3. **Run the application:**
+2. Launch the application:
    ```bash
    python3 main.py
    ```
 
 ---
 
-## 💻 Example Usage Walkthrough
+## Command Reference
 
-When you start the application, the interactive menu appears:
+The interactive CLI provides the following operational commands:
 
-```text
-================================
-      DRUG INVENTORY SYSTEM
-================================
-1. Add Medicine
-2. View Medicines
-3. Add Warehouse
-4. View Warehouses
-5. Add Hospital
-6. View Hospitals
-7. Add Stock
-8. View Warehouse Inventory
-9. View Hospital Inventory
-10. Distribute Medicine
-11. Record Consumption
-12. View Alerts
-13. Dashboard
-14. Adjust Stock
-15. View Stock History
-0. Exit
-================================
-Enter your choice: 
-```
-
-### 1. Register a Medicine (Option 1)
-```text
---- Add Medicine ---
-Medicine name: Paracetamol
-Strength: 500mg
-Unit: tablets
-Expiry date (YYYY-MM-DD): 2027-12-31
-Minimum stock: 50
-
-Medicine added successfully!
-```
-
-### 2. View Warehouse Inventory (Option 8)
-```text
---- Warehouse Inventory ---
-
----------------------------------------------------------------------------
-Warehouse           Medicine                 Quantity    Status         
----------------------------------------------------------------------------
-Central Warehouse   Paracetamol 500mg        500         OK             
----------------------------------------------------------------------------
-```
-
-### 3. Check Alerts (Option 12)
-If hospital stock drops below the minimum threshold (e.g. 40 tablets left when minimum is 50):
-```text
---- Alerts ---
-
-🟡 LOW STOCK
-----------------------------------------
-Location: District Hospital
-Medicine: Paracetamol 500mg
-Current stock: 40 tablets
-Minimum stock: 50 tablets
-```
-
-### 4. Inspect Audit History (Option 15)
-```text
---- Stock Movement History ---
-
-------------------------------------------------------------
-Date:       2026-09-15 11:45:56
-Medicine:   Paracetamol 500mg
-Location:   Central Warehouse
-Type:       ADD
-Quantity:   +500
-Reason:     Initial stock
-
-------------------------------------------------------------
-Date:       2026-09-15 11:45:56
-Medicine:   Paracetamol 500mg
-Location:   Central Warehouse
-Type:       DISTRIBUTE
-Quantity:   -100
-Reason:     Distributed to hospital 1
-
-------------------------------------------------------------
-Date:       2026-09-15 11:45:56
-Medicine:   Paracetamol 500mg
-Location:   District Hospital
-Type:       RECEIVE
-Quantity:   +100
-Reason:     Received from warehouse 1
-
-------------------------------------------------------------
-Date:       2026-09-15 11:45:56
-Medicine:   Paracetamol 500mg
-Location:   District Hospital
-Type:       CONSUME
-Quantity:   -60
-Reason:     Medicine consumed
-
-------------------------------------------------------------
-Date:       2026-09-15 11:45:56
-Medicine:   Paracetamol 500mg
-Location:   Central Warehouse
-Type:       ADJUST
-Quantity:   -20
-Reason:     Damaged stock
-------------------------------------------------------------
-```
+| Command | Function | Description |
+| :--- | :--- | :--- |
+| `1` | **Add Medicine** | Register a new drug entry with name, strength, unit, expiry, and minimum threshold |
+| `2` | **View Medicines** | Display the full catalog of registered pharmaceuticals |
+| `3` | **Add Warehouse** | Register a primary supply storage facility |
+| `4` | **View Warehouses** | List registered warehouse locations |
+| `5` | **Add Hospital** | Register a healthcare dispensing facility |
+| `6` | **View Hospitals** | List registered hospital locations |
+| `7` | **Add Stock** | Record an incoming shipment into a specific warehouse |
+| `8` | **View Warehouse Inventory** | Formatted tabular view of warehouse stock levels and thresholds |
+| `9` | **View Hospital Inventory** | Formatted tabular view of hospital stock levels and thresholds |
+| `10` | **Distribute Medicine** | Transfer stock from a warehouse to a hospital |
+| `11` | **Record Consumption** | Deduct dispensed medication from hospital stock |
+| `12` | **View Alerts** | Display low-stock warnings and expiring/expired medications |
+| `13` | **Dashboard** | Display high-level system metrics and alert counters |
+| `14` | **Adjust Stock** | Apply manual stock revisions (+/-) with required justification |
+| `15` | **View Stock History** | Display chronological audit trail of all inventory transactions |
+| `0` | **Exit** | Terminate the application session safely |
 
 ---
 
-## 🛡️ Validation and Error Handling
+## Validation and Integrity Controls
 
-The application enforces data integrity to prevent silent corruption or crashes:
+To protect against state corruption, the application enforces the following runtime checks:
 
-| Validation Rule | Behavior / Message |
-| :--- | :--- |
-| **Non-Numeric Numbers** | Entering letters or symbols for stock, quantity, or IDs prompts: `❌ Please enter a valid number.` |
-| **Negative or Zero Values** | Stock intake, distribution, and consumption require integers > 0 (`❌ Please enter a number greater than 0.`). |
-| **Invalid Warehouse / Hospital ID** | Entering an ID not present in memory prompts: `❌ Invalid warehouse.` or `❌ Invalid hospital.` |
-| **Invalid Medicine ID** | Entering an unregistered medicine ID prompts: `❌ Invalid medicine.` |
-| **Expiry Date Formatting** | Validates strict `YYYY-MM-DD` compliance via `datetime.strptime()` (`❌ Invalid date. Please use YYYY-MM-DD.`). |
-| **Insufficient Stock Transfers** | Rejects distributions greater than available warehouse stock (`❌ Insufficient stock!`). |
-| **Insufficient Consumption** | Rejects consumption greater than available hospital stock (`❌ Insufficient hospital stock!`). |
-| **Negative Inventory from Adjustments** | Adjustments that would drive quantity below 0 are rejected (`❌ Stock cannot become negative.`). |
-| **Zero Adjustments** | Rejects zero quantity adjustment (`❌ Adjustment cannot be zero.`). |
-| **Empty Adjustment Reason** | Enforces an audit justification string (`❌ Reason cannot be empty.`). |
+- **Type Safety**: Rejects non-numeric values for identifiers, counts, and quantities.
+- **Positive Bounds**: Rejects inputs `<= 0` during stock intake, distribution, and consumption.
+- **Foreign Key Verification**: Confirms warehouse, hospital, and medicine IDs exist in memory before proceeding.
+- **Date Compliance**: Strict ISO-style format checking (`YYYY-MM-DD`) via `datetime.strptime`.
+- **Transfer Solvency**: Prevents distributions that exceed available warehouse balance.
+- **Dispensation Solvency**: Prevents consumption exceeding current hospital balance.
+- **Non-Negative Invariants**: Rejects manual stock adjustments that would result in negative balances.
+- **Mandatory Audit Trail**: Requires a non-empty reason string for every manual inventory adjustment.
 
 ---
 
-## ✅ Current Status (Completed in CLI MVP v1)
+## Verification and Testing
 
-- [x] Full CRUD-style viewing and adding for medicines, warehouses, and hospitals.
-- [x] Inflow, distribution, and consumption workflows with quantity validation.
-- [x] Two-level stock holding (warehouses and hospitals).
-- [x] Formatted table displays for warehouse and hospital inventory.
-- [x] Multi-category alert engine (low stock, expiring soon in 30 days, expired).
-- [x] Executive dashboard with alert rollup counters.
-- [x] Stock adjustments (+/-) with mandatory reasoning.
-- [x] Complete append-only audit trail logging in `stock_movements.json`.
-- [x] Persistent storage across application restarts using JSON.
+The current implementation has been validated against an end-to-end integration test suite:
+
+1. **Intake**: Stocking 500 units into central storage.
+2. **Transfer**: Distributing 100 units to a district clinic (Warehouse: 400, Clinic: 100).
+3. **Dispensation**: Consuming 60 units (Clinic: 40, triggering low-stock alert against a 50-unit threshold).
+4. **Adjustment**: Reconciling warehouse stock by -20 units with reason "Damaged stock" (Warehouse: 380).
+5. **Audit Verification**: Validating all entries (`ADD`, `DISTRIBUTE`, `RECEIVE`, `CONSUME`, `ADJUST`) in `stock_movements.json`.
+6. **Persistence Recovery**: Restarting runtime and confirming state recovery from flat-file storage.
 
 ---
 
-## 🔮 Possible Future Improvements (Phase 2 & Beyond)
+## Development Roadmap
 
-* **Vendor & Procurement Management:** Add vendor profiles, purchase orders (PO), and incoming shipments received into warehouses.
-* **Batch / Lot & Serial Tracking:** Support distinct batch numbers, manufactured dates, and batch-specific expiry dates for the same medicine.
-* **Relational Database Backend:** Transition from JSON flat files to SQLite or PostgreSQL for concurrency and relational queries.
-* **Role-Based Access Control (RBAC):** Authenticated logins for Warehouse Managers, Hospital Pharmacists, and State Administrators.
-* **REST API & Web Interface:** Expose endpoints using FastAPI / Flask and build a responsive web dashboard (React / Next.js).
-* **Demand Forecasting & Automated Re-ordering:** Predictive analysis based on consumption velocity to suggest order quantities before stockouts happen.
+Planned capabilities for subsequent development phases:
+
+- **Phase 2 — Procurement Lifecycle**: Integration of vendor registries, purchase order generation, and receiving workflows.
+- **Phase 3 — Batch & Lot Tracking**: Lot-level granularity allowing multiple expiration dates and serial numbers per product SKU.
+- **Phase 4 — Persistence Migration**: Transition from JSON flat files to a relational database backend (SQLite / PostgreSQL) for atomic multi-user transactions.
+- **Phase 5 — Web Service & Interface**: RESTful API endpoints (FastAPI) coupled with a web-based dashboard interface.
