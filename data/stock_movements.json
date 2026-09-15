@@ -5,8 +5,8 @@
         "location_id": 1,
         "movement_type": "ADD",
         "quantity": 500,
-        "reason": "Stock added",
-        "date": "2026-09-15 11:39:50"
+        "reason": "Initial stock",
+        "date": "2026-09-15 11:45:56"
     },
     {
         "medicine_id": 1,
@@ -15,7 +15,7 @@
         "movement_type": "DISTRIBUTE",
         "quantity": -100,
         "reason": "Distributed to hospital 1",
-        "date": "2026-09-15 11:40:33"
+        "date": "2026-09-15 11:45:56"
     },
     {
         "medicine_id": 1,
@@ -24,6 +24,42 @@
         "movement_type": "RECEIVE",
         "quantity": 100,
         "reason": "Received from warehouse 1",
-        "date": "2026-09-15 11:40:33"
+        "date": "2026-09-15 11:45:56"
+    },
+    {
+        "medicine_id": 1,
+        "location_type": "hospital",
+        "location_id": 1,
+        "movement_type": "CONSUME",
+        "quantity": -60,
+        "reason": "Medicine consumed",
+        "date": "2026-09-15 11:45:56"
+    },
+    {
+        "medicine_id": 1,
+        "location_type": "warehouse",
+        "location_id": 1,
+        "movement_type": "ADJUST",
+        "quantity": -20,
+        "reason": "Damaged stock",
+        "date": "2026-09-15 11:45:56"
+    },
+    {
+        "medicine_id": 1,
+        "location_type": "warehouse",
+        "location_id": 1,
+        "movement_type": "ADJUST",
+        "quantity": -1,
+        "reason": "Reason",
+        "date": "2026-09-15 11:46:05"
+    },
+    {
+        "medicine_id": 1,
+        "location_type": "warehouse",
+        "location_id": 1,
+        "movement_type": "ADD",
+        "quantity": 10,
+        "reason": "Stock added",
+        "date": "2026-09-15 11:46:05"
     }
 ]

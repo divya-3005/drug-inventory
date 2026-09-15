@@ -302,13 +302,69 @@ def adjust_stock():
     # Update stock
     stock["quantity"] = new_quantity
 
-    save_data(INVENTORY_FILE, inventory)
+    save_data(
+        INVENTORY_FILE,
+        inventory
+    )
+
+    record_movement(
+        medicine_id,
+        "warehouse",
+        warehouse_id,
+        "ADJUST",
+        adjustment,
+        reason
+    )
 
     print("\n✅ Stock adjusted successfully!")
     print(f"Previous stock: {new_quantity - adjustment}")
     print(f"Adjustment: {adjustment:+}")
     print(f"New stock: {new_quantity}")
     print(f"Reason: {reason}")
+
+
+def view_stock_history():
+    print("\n--- Stock Movement History ---")
+
+    if not stock_movements:
+        print("No stock movements found.")
+        return
+
+    for movement in stock_movements:
+        medicine = find_medicine(movement["medicine_id"])
+
+        if medicine is None:
+            continue
+
+        location_name = "Unknown"
+
+        if movement["location_type"] == "warehouse":
+            warehouse = find_warehouse(movement["location_id"])
+
+            if warehouse:
+                location_name = warehouse["name"]
+
+        elif movement["location_type"] == "hospital":
+            hospital = find_hospital(movement["location_id"])
+
+            if hospital:
+                location_name = hospital["name"]
+
+        print("\n" + "-" * 60)
+
+        print(f"Date:       {movement['date']}")
+        print(
+            f"Medicine:   "
+            f"{medicine['name']} {medicine['strength']}"
+        )
+        print(f"Location:   {location_name}")
+        print(f"Type:       {movement['movement_type']}")
+        print(f"Quantity:   {movement['quantity']:+}")
+
+        if movement["reason"]:
+            print(f"Reason:     {movement['reason']}")
+
+    print("-" * 60)
 
 
 def show_menu():
@@ -329,6 +385,7 @@ def show_menu():
     print("12. View Alerts")
     print("13. Dashboard")
     print("14. Adjust Stock")
+    print("15. View Stock History")
     print("0. Exit")
     print("================================")
 
@@ -788,7 +845,19 @@ def record_consumption():
     # Remove consumed quantity
     hospital_stock["quantity"] -= quantity
 
-    save_data(HOSPITAL_INVENTORY_FILE, hospital_inventory)
+    save_data(
+        HOSPITAL_INVENTORY_FILE,
+        hospital_inventory
+    )
+
+    record_movement(
+        medicine_id,
+        "hospital",
+        hospital_id,
+        "CONSUME",
+        -quantity,
+        "Medicine consumed"
+    )
 
     print("\nConsumption recorded successfully!")
 
@@ -967,6 +1036,10 @@ def main():
 
         elif choice == "14":
             adjust_stock()
+            pause()
+
+        elif choice == "15":
+            view_stock_history()
             pause()
 
 
