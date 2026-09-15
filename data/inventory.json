@@ -1,1 +1,7 @@
-[]
+[
+    {
+        "warehouse_id": 1,
+        "medicine_id": 1,
+        "quantity": 780
+    }
+]

@@ -7,6 +7,7 @@ WAREHOUSES_FILE = "data/warehouses.json"
 HOSPITALS_FILE = "data/hospitals.json"
 INVENTORY_FILE = "data/inventory.json"
 HOSPITAL_INVENTORY_FILE = "data/hospital_inventory.json"
+STOCK_MOVEMENTS_FILE = "data/stock_movements.json"
 
 
 def load_data(filename):
@@ -24,7 +25,290 @@ warehouses = load_data(WAREHOUSES_FILE)
 hospitals = load_data(HOSPITALS_FILE)
 inventory = load_data(INVENTORY_FILE)
 hospital_inventory = load_data(HOSPITAL_INVENTORY_FILE)
+stock_movements = load_data(STOCK_MOVEMENTS_FILE)
 
+
+def get_positive_integer(prompt):
+    while True:
+        try:
+            value = int(input(prompt))
+
+            if value <= 0:
+                print("❌ Please enter a number greater than 0.")
+                continue
+
+            return value
+
+        except ValueError:
+            print("❌ Please enter a valid number.")
+
+
+def get_valid_warehouse_id():
+    while True:
+        try:
+            warehouse_id = int(input("Select warehouse: "))
+
+            for warehouse in warehouses:
+                if warehouse["id"] == warehouse_id:
+                    return warehouse_id
+
+            print("❌ Invalid warehouse.")
+
+        except ValueError:
+            print("❌ Please enter a valid number.")
+
+
+def get_valid_hospital_id():
+    while True:
+        try:
+            hospital_id = int(input("Select hospital: "))
+
+            for hospital in hospitals:
+                if hospital["id"] == hospital_id:
+                    return hospital_id
+
+            print("❌ Invalid hospital.")
+
+        except ValueError:
+            print("❌ Please enter a valid number.")
+
+
+def get_valid_medicine_id():
+    while True:
+        try:
+            medicine_id = int(input("Select medicine: "))
+
+            for medicine in medicines:
+                if medicine["id"] == medicine_id:
+                    return medicine_id
+
+            print("❌ Invalid medicine.")
+
+        except ValueError:
+            print("❌ Please enter a valid number.")
+
+
+def find_warehouse(warehouse_id):
+    for warehouse in warehouses:
+        if warehouse["id"] == warehouse_id:
+            return warehouse
+    return None
+
+
+def find_hospital(hospital_id):
+    for hospital in hospitals:
+        if hospital["id"] == hospital_id:
+            return hospital
+    return None
+
+
+def find_medicine(medicine_id):
+    for medicine in medicines:
+        if medicine["id"] == medicine_id:
+            return medicine
+    return None
+
+
+def find_warehouse_stock(warehouse_id, medicine_id):
+    for stock in inventory:
+        if (
+            stock["warehouse_id"] == warehouse_id
+            and stock["medicine_id"] == medicine_id
+        ):
+            return stock
+
+    return None
+
+
+def find_hospital_stock(hospital_id, medicine_id):
+    for stock in hospital_inventory:
+        if (
+            stock["hospital_id"] == hospital_id
+            and stock["medicine_id"] == medicine_id
+        ):
+            return stock
+
+    return None
+
+
+def record_movement(
+    medicine_id,
+    location_type,
+    location_id,
+    movement_type,
+    quantity,
+    reason=""
+):
+    movement = {
+        "medicine_id": medicine_id,
+        "location_type": location_type,
+        "location_id": location_id,
+        "movement_type": movement_type,
+        "quantity": quantity,
+        "reason": reason,
+        "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+
+    stock_movements.append(movement)
+
+    save_data(
+        STOCK_MOVEMENTS_FILE,
+        stock_movements
+    )
+
+
+
+def view_dashboard():
+    print("\n========================================")
+    print("              DASHBOARD")
+    print("========================================")
+
+    print(f"\nMedicines:        {len(medicines)}")
+    print(f"Warehouses:       {len(warehouses)}")
+    print(f"Hospitals:        {len(hospitals)}")
+
+    print(f"\nWarehouse Stock:  {len(inventory)} records")
+    print(f"Hospital Stock:   {len(hospital_inventory)} records")
+
+    # -------------------------
+    # COUNT ALERTS
+    # -------------------------
+
+    today = date.today()
+    expiry_limit = today + timedelta(days=30)
+
+    low_stock_count = 0
+    expired_count = 0
+    expiring_soon_count = 0
+
+    # Warehouse low stock
+    for stock in inventory:
+        medicine = find_medicine(stock["medicine_id"])
+
+        if medicine is None:
+            continue
+
+        if stock["quantity"] <= medicine["minimum_stock"]:
+            low_stock_count += 1
+
+    # Hospital low stock
+    for stock in hospital_inventory:
+        medicine = find_medicine(stock["medicine_id"])
+
+        if medicine is None:
+            continue
+
+        if stock["quantity"] <= medicine["minimum_stock"]:
+            low_stock_count += 1
+
+    # Expiry alerts
+    for medicine in medicines:
+        expiry = datetime.strptime(
+            medicine["expiry_date"],
+            "%Y-%m-%d"
+        ).date()
+
+        if expiry < today:
+            expired_count += 1
+
+        elif expiry <= expiry_limit:
+            expiring_soon_count += 1
+
+    print("\n----------------------------------------")
+    print("              ALERT SUMMARY")
+    print("----------------------------------------")
+
+    print(f"\n🔴 Expired:          {expired_count}")
+    print(f"🟠 Expiring Soon:    {expiring_soon_count}")
+    print(f"🟡 Low Stock:        {low_stock_count}")
+
+    print("\n========================================")
+
+
+def adjust_stock():
+    print("\n--- Adjust Stock ---")
+
+    if not warehouses:
+        print("No warehouses found.")
+        return
+
+    if not medicines:
+        print("No medicines found.")
+        return
+
+    if not inventory:
+        print("No warehouse stock found.")
+        return
+
+    # Select warehouse
+    print("\nWarehouses:")
+
+    for warehouse in warehouses:
+        print(f"{warehouse['id']}. {warehouse['name']}")
+
+    warehouse_id = get_valid_warehouse_id()
+
+    # Select medicine
+    print("\nMedicines:")
+
+    for medicine in medicines:
+        print(
+            f"{medicine['id']}. "
+            f"{medicine['name']} {medicine['strength']}"
+        )
+
+    medicine_id = get_valid_medicine_id()
+
+    # Find stock
+    stock = find_warehouse_stock(
+        warehouse_id,
+        medicine_id
+    )
+
+    if stock is None:
+        print("\n❌ This medicine is not available in this warehouse.")
+        return
+
+    print(f"\nCurrent stock: {stock['quantity']}")
+
+    # Adjustment
+    while True:
+        try:
+            adjustment = int(
+                input("Adjustment quantity (+/-): ")
+            )
+
+            if adjustment == 0:
+                print("❌ Adjustment cannot be zero.")
+                continue
+
+            new_quantity = stock["quantity"] + adjustment
+
+            if new_quantity < 0:
+                print("❌ Stock cannot become negative.")
+                continue
+
+            break
+
+        except ValueError:
+            print("❌ Please enter a valid number.")
+
+    reason = input("Reason: ").strip()
+
+    if not reason:
+        print("❌ Reason cannot be empty.")
+        return
+
+    # Update stock
+    stock["quantity"] = new_quantity
+
+    save_data(INVENTORY_FILE, inventory)
+
+    print("\n✅ Stock adjusted successfully!")
+    print(f"Previous stock: {new_quantity - adjustment}")
+    print(f"Adjustment: {adjustment:+}")
+    print(f"New stock: {new_quantity}")
+    print(f"Reason: {reason}")
 
 
 def show_menu():
@@ -43,6 +327,8 @@ def show_menu():
     print("10. Distribute Medicine")
     print("11. Record Consumption")
     print("12. View Alerts")
+    print("13. Dashboard")
+    print("14. Adjust Stock")
     print("0. Exit")
     print("================================")
 
@@ -55,8 +341,16 @@ def add_medicine():
     name = input("Medicine name: ")
     strength = input("Strength: ")
     unit = input("Unit: ")
-    expiry_date = input("Expiry date (YYYY-MM-DD): ")
-    minimum_stock = int(input("Minimum stock: "))
+    while True:
+        expiry_date = input("Expiry date (YYYY-MM-DD): ")
+
+        try:
+            datetime.strptime(expiry_date, "%Y-%m-%d")
+            break
+        except ValueError:
+            print("❌ Invalid date. Please use YYYY-MM-DD.")
+
+    minimum_stock = get_positive_integer("Minimum stock: ")
 
     medicine = {
         "id": len(medicines) + 1,
@@ -167,7 +461,7 @@ def add_stock():
     for warehouse in warehouses:
         print(f"{warehouse['id']}. {warehouse['name']}")
 
-    warehouse_id = int(input("Select warehouse: "))
+    warehouse_id = get_valid_warehouse_id()
 
     print("\nMedicines:")
 
@@ -177,21 +471,31 @@ def add_stock():
             f"{medicine['name']} {medicine['strength']}"
         )
 
-    medicine_id = int(input("Select medicine: "))
+    medicine_id = get_valid_medicine_id()
 
-    quantity = int(input("Quantity: "))
+    quantity = get_positive_integer("Quantity: ")
 
-    for stock in inventory:
-        if (
-            stock["warehouse_id"] == warehouse_id
-            and stock["medicine_id"] == medicine_id
-        ):
-            stock["quantity"] += quantity
+    stock = find_warehouse_stock(warehouse_id, medicine_id)
 
-            save_data(INVENTORY_FILE, inventory)
+    if stock:
+        stock["quantity"] += quantity
 
-            print("\nStock updated successfully!")
-            return
+        save_data(
+            INVENTORY_FILE,
+            inventory
+        )
+
+        record_movement(
+            medicine_id,
+            "warehouse",
+            warehouse_id,
+            "ADD",
+            quantity,
+            "Stock added"
+        )
+
+        print("\nStock updated successfully!")
+        return
 
     stock = {
         "warehouse_id": warehouse_id,
@@ -201,34 +505,64 @@ def add_stock():
 
     inventory.append(stock)
 
-    save_data(INVENTORY_FILE, inventory)
+    save_data(
+        INVENTORY_FILE,
+        inventory
+    )
+
+    record_movement(
+        medicine_id,
+        "warehouse",
+        warehouse_id,
+        "ADD",
+        quantity,
+        "Initial stock"
+    )
 
     print("\nStock added successfully!")
 
 def view_inventory():
-    print("\n--- Inventory ---")
+    print("\n--- Warehouse Inventory ---")
 
     if not inventory:
         print("No inventory found.")
         return
 
+    print("\n" + "-" * 75)
+    print(
+        f"{'Warehouse':<20}"
+        f"{'Medicine':<25}"
+        f"{'Quantity':<12}"
+        f"{'Status':<15}"
+    )
+    print("-" * 75)
+
     for stock in inventory:
+        warehouse = find_warehouse(stock["warehouse_id"])
+        medicine = find_medicine(stock["medicine_id"])
 
-        warehouse = None
-        medicine = None
+        if warehouse is None or medicine is None:
+            continue
 
-        for w in warehouses:
-            if w["id"] == stock["warehouse_id"]:
-                warehouse = w
+        quantity = stock["quantity"]
 
-        for m in medicines:
-            if m["id"] == stock["medicine_id"]:
-                medicine = m
+        if quantity <= medicine["minimum_stock"]:
+            status = "LOW STOCK"
+        else:
+            status = "OK"
 
-        print("\n-----------------------------")
-        print(f"Warehouse: {warehouse['name']}")
-        print(f"Medicine: {medicine['name']} {medicine['strength']}")
-        print(f"Quantity: {stock['quantity']} {medicine['unit']}")
+        medicine_name = (
+            f"{medicine['name']} {medicine['strength']}"
+        )
+
+        print(
+            f"{warehouse['name']:<20}"
+            f"{medicine_name:<25}"
+            f"{quantity:<12}"
+            f"{status:<15}"
+        )
+
+    print("-" * 75)
 
 def distribute_medicine():
     print("\n--- Distribute Medicine ---")
@@ -254,14 +588,14 @@ def distribute_medicine():
     for warehouse in warehouses:
         print(f"{warehouse['id']}. {warehouse['name']}")
 
-    warehouse_id = int(input("Select warehouse: "))
+    warehouse_id = get_valid_warehouse_id()
 
     print("\nHospitals:")
 
     for hospital in hospitals:
         print(f"{hospital['id']}. {hospital['name']}")
 
-    hospital_id = int(input("Select hospital: "))
+    hospital_id = get_valid_hospital_id()
 
     print("\nMedicines:")
 
@@ -271,20 +605,14 @@ def distribute_medicine():
             f"{medicine['name']} {medicine['strength']}"
         )
 
-    medicine_id = int(input("Select medicine: "))
+    medicine_id = get_valid_medicine_id()
 
-    quantity = int(input("Quantity to distribute: "))
+    quantity = get_positive_integer("Quantity to distribute: ")
 
-    # Find warehouse stock
-    warehouse_stock = None
-
-    for stock in inventory:
-        if (
-            stock["warehouse_id"] == warehouse_id
-            and stock["medicine_id"] == medicine_id
-        ):
-            warehouse_stock = stock
-            break
+    warehouse_stock = find_warehouse_stock(
+        warehouse_id,
+        medicine_id
+    )
 
     if warehouse_stock is None:
         print("\nMedicine is not available in this warehouse.")
@@ -300,20 +628,44 @@ def distribute_medicine():
     # Remove stock from warehouse
     warehouse_stock["quantity"] -= quantity
 
-    save_data(INVENTORY_FILE, inventory)
+    save_data(
+        INVENTORY_FILE,
+        inventory
+    )
 
-    # Check if hospital already has this medicine
-    for stock in hospital_inventory:
-        if (
-            stock["hospital_id"] == hospital_id
-            and stock["medicine_id"] == medicine_id
-        ):
-            stock["quantity"] += quantity
+    record_movement(
+        medicine_id,
+        "warehouse",
+        warehouse_id,
+        "DISTRIBUTE",
+        -quantity,
+        f"Distributed to hospital {hospital_id}"
+    )
 
-            save_data(HOSPITAL_INVENTORY_FILE, hospital_inventory)
+    hospital_stock = find_hospital_stock(
+        hospital_id,
+        medicine_id
+    )
 
-            print("\nMedicine distributed successfully!")
-            return
+    if hospital_stock:
+        hospital_stock["quantity"] += quantity
+
+        save_data(
+            HOSPITAL_INVENTORY_FILE,
+            hospital_inventory
+        )
+
+        record_movement(
+            medicine_id,
+            "hospital",
+            hospital_id,
+            "RECEIVE",
+            quantity,
+            f"Received from warehouse {warehouse_id}"
+        )
+
+        print("\nMedicine distributed successfully!")
+        return
 
     # Hospital does not have this medicine yet
     new_stock = {
@@ -324,7 +676,19 @@ def distribute_medicine():
 
     hospital_inventory.append(new_stock)
 
-    save_data(HOSPITAL_INVENTORY_FILE, hospital_inventory)
+    save_data(
+        HOSPITAL_INVENTORY_FILE,
+        hospital_inventory
+    )
+
+    record_movement(
+        medicine_id,
+        "hospital",
+        hospital_id,
+        "RECEIVE",
+        quantity,
+        f"Received from warehouse {warehouse_id}"
+    )
 
     print("\nMedicine distributed successfully!")
 
@@ -335,23 +699,41 @@ def view_hospital_inventory():
         print("No hospital inventory found.")
         return
 
+    print("\n" + "-" * 75)
+    print(
+        f"{'Hospital':<20}"
+        f"{'Medicine':<25}"
+        f"{'Quantity':<12}"
+        f"{'Status':<15}"
+    )
+    print("-" * 75)
+
     for stock in hospital_inventory:
+        hospital = find_hospital(stock["hospital_id"])
+        medicine = find_medicine(stock["medicine_id"])
 
-        hospital = None
-        medicine = None
+        if hospital is None or medicine is None:
+            continue
 
-        for h in hospitals:
-            if h["id"] == stock["hospital_id"]:
-                hospital = h
+        quantity = stock["quantity"]
 
-        for m in medicines:
-            if m["id"] == stock["medicine_id"]:
-                medicine = m
+        if quantity <= medicine["minimum_stock"]:
+            status = "LOW STOCK"
+        else:
+            status = "OK"
 
-        print("\n-----------------------------")
-        print(f"Hospital: {hospital['name']}")
-        print(f"Medicine: {medicine['name']} {medicine['strength']}")
-        print(f"Quantity: {stock['quantity']} {medicine['unit']}")
+        medicine_name = (
+            f"{medicine['name']} {medicine['strength']}"
+        )
+
+        print(
+            f"{hospital['name']:<20}"
+            f"{medicine_name:<25}"
+            f"{quantity:<12}"
+            f"{status:<15}"
+        )
+
+    print("-" * 75)
 
 def record_consumption():
     print("\n--- Record Consumption ---")
@@ -373,7 +755,7 @@ def record_consumption():
     for hospital in hospitals:
         print(f"{hospital['id']}. {hospital['name']}")
 
-    hospital_id = int(input("Select hospital: "))
+    hospital_id = get_valid_hospital_id()
 
     print("\nMedicines:")
 
@@ -383,20 +765,14 @@ def record_consumption():
             f"{medicine['name']} {medicine['strength']}"
         )
 
-    medicine_id = int(input("Select medicine: "))
+    medicine_id = get_valid_medicine_id()
 
-    quantity = int(input("Quantity consumed: "))
+    quantity = get_positive_integer("Quantity consumed: ")
 
-    # Find hospital stock
-    hospital_stock = None
-
-    for stock in hospital_inventory:
-        if (
-            stock["hospital_id"] == hospital_id
-            and stock["medicine_id"] == medicine_id
-        ):
-            hospital_stock = stock
-            break
+    hospital_stock = find_hospital_stock(
+        hospital_id,
+        medicine_id
+    )
 
     if hospital_stock is None:
         print("\nThis medicine is not available at this hospital.")
@@ -423,61 +799,64 @@ def view_alerts():
     today = date.today()
     expiry_limit = today + timedelta(days=30)
 
-    alerts_found = False
+    low_stock_found = False
+    expired_found = False
+    expiring_soon_found = False
 
-    # Check warehouse inventory
+    # -------------------------
+    # LOW STOCK - WAREHOUSES
+    # -------------------------
+
     for stock in inventory:
+        medicine = find_medicine(stock["medicine_id"])
+        warehouse = find_warehouse(stock["warehouse_id"])
 
-        medicine = None
-        warehouse = None
+        if medicine is None or warehouse is None:
+            continue
 
-        for m in medicines:
-            if m["id"] == stock["medicine_id"]:
-                medicine = m
-                break
-
-        for w in warehouses:
-            if w["id"] == stock["warehouse_id"]:
-                warehouse = w
-                break
-
-        # Low stock alert
         if stock["quantity"] <= medicine["minimum_stock"]:
-            print("\n⚠️ LOW STOCK")
-            print(f"Medicine: {medicine['name']} {medicine['strength']}")
-            print(f"Location: {warehouse['name']}")
-            print(f"Current stock: {stock['quantity']}")
-            print(f"Minimum stock: {medicine['minimum_stock']}")
 
-            alerts_found = True
+            if not low_stock_found:
+                print("\n🟡 LOW STOCK")
+                print("-" * 40)
+                low_stock_found = True
 
-    # Check hospital inventory
+            print(
+                f"Location: {warehouse['name']}\n"
+                f"Medicine: {medicine['name']} {medicine['strength']}\n"
+                f"Current stock: {stock['quantity']} {medicine['unit']}\n"
+                f"Minimum stock: {medicine['minimum_stock']} {medicine['unit']}\n"
+            )
+
+    # -------------------------
+    # LOW STOCK - HOSPITALS
+    # -------------------------
+
     for stock in hospital_inventory:
+        medicine = find_medicine(stock["medicine_id"])
+        hospital = find_hospital(stock["hospital_id"])
 
-        medicine = None
-        hospital = None
+        if medicine is None or hospital is None:
+            continue
 
-        for m in medicines:
-            if m["id"] == stock["medicine_id"]:
-                medicine = m
-                break
-
-        for h in hospitals:
-            if h["id"] == stock["hospital_id"]:
-                hospital = h
-                break
-
-        # Low stock alert
         if stock["quantity"] <= medicine["minimum_stock"]:
-            print("\n⚠️ LOW STOCK")
-            print(f"Medicine: {medicine['name']} {medicine['strength']}")
-            print(f"Location: {hospital['name']}")
-            print(f"Current stock: {stock['quantity']}")
-            print(f"Minimum stock: {medicine['minimum_stock']}")
 
-            alerts_found = True
+            if not low_stock_found:
+                print("\n🟡 LOW STOCK")
+                print("-" * 40)
+                low_stock_found = True
 
-    # Check medicine expiry
+            print(
+                f"Location: {hospital['name']}\n"
+                f"Medicine: {medicine['name']} {medicine['strength']}\n"
+                f"Current stock: {stock['quantity']} {medicine['unit']}\n"
+                f"Minimum stock: {medicine['minimum_stock']} {medicine['unit']}\n"
+            )
+
+    # -------------------------
+    # EXPIRY ALERTS
+    # -------------------------
+
     for medicine in medicines:
 
         expiry = datetime.strptime(
@@ -485,22 +864,43 @@ def view_alerts():
             "%Y-%m-%d"
         ).date()
 
+        # EXPIRED
         if expiry < today:
-            print("\n🔴 EXPIRED")
-            print(f"Medicine: {medicine['name']} {medicine['strength']}")
-            print(f"Expiry date: {medicine['expiry_date']}")
 
-            alerts_found = True
+            if not expired_found:
+                print("\n🔴 EXPIRED")
+                print("-" * 40)
+                expired_found = True
 
+            print(
+                f"Medicine: {medicine['name']} {medicine['strength']}\n"
+                f"Expiry date: {medicine['expiry_date']}\n"
+            )
+
+        # EXPIRING SOON
         elif expiry <= expiry_limit:
-            print("\n⚠️ EXPIRING SOON")
-            print(f"Medicine: {medicine['name']} {medicine['strength']}")
-            print(f"Expiry date: {medicine['expiry_date']}")
 
-            alerts_found = True
+            if not expiring_soon_found:
+                print("\n🟠 EXPIRING SOON")
+                print("-" * 40)
+                expiring_soon_found = True
 
-    if not alerts_found:
-        print("\nNo alerts. Everything looks good!")
+            print(
+                f"Medicine: {medicine['name']} {medicine['strength']}\n"
+                f"Expiry date: {medicine['expiry_date']}\n"
+            )
+
+    # -------------------------
+    # NO ALERTS
+    # -------------------------
+
+    if (
+        not low_stock_found
+        and not expired_found
+        and not expiring_soon_found
+    ):
+        print("\n✅ No alerts. Everything looks good!")
+
 
 
 def main():
@@ -559,6 +959,14 @@ def main():
 
         elif choice == "12":
             view_alerts()
+            pause()
+
+        elif choice == "13":
+            view_dashboard()
+            pause()
+
+        elif choice == "14":
+            adjust_stock()
             pause()
 
 

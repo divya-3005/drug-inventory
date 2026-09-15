@@ -1,1 +1,10 @@
-[]
+[
+    {
+        "id": 1,
+        "name": "Paracetamol",
+        "strength": "500mg",
+        "unit": "tablets",
+        "expiry_date": "2027-12-31",
+        "minimum_stock": 50
+    }
+]
