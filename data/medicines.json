@@ -4,7 +4,39 @@
         "name": "Paracetamol",
         "strength": "500mg",
         "unit": "tablets",
-        "expiry_date": "2027-12-31",
+        "expiry_date": "2027-09-19",
+        "minimum_stock": 100
+    },
+    {
+        "id": 2,
+        "name": "Amoxicillin",
+        "strength": "250mg",
+        "unit": "capsules",
+        "expiry_date": "2026-10-04",
         "minimum_stock": 50
+    },
+    {
+        "id": 3,
+        "name": "Metformin",
+        "strength": "500mg",
+        "unit": "tablets",
+        "expiry_date": "2028-02-01",
+        "minimum_stock": 40
+    },
+    {
+        "id": 4,
+        "name": "Ibuprofen",
+        "strength": "400mg",
+        "unit": "tablets",
+        "expiry_date": "2028-08-19",
+        "minimum_stock": 60
+    },
+    {
+        "id": 5,
+        "name": "Azithromycin",
+        "strength": "500mg",
+        "unit": "tablets",
+        "expiry_date": "2026-09-09",
+        "minimum_stock": 30
     }
 ]

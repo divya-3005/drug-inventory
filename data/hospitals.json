@@ -1,7 +1,12 @@
 [
     {
         "id": 1,
-        "name": "District Hospital",
-        "location": "Delhi"
+        "name": "City General Hospital",
+        "location": "New Delhi"
+    },
+    {
+        "id": 2,
+        "name": "District Care Clinic",
+        "location": "Chandigarh"
     }
 ]

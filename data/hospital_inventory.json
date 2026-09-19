@@ -2,6 +2,16 @@
     {
         "hospital_id": 1,
         "medicine_id": 1,
-        "quantity": 40
+        "quantity": 250
+    },
+    {
+        "hospital_id": 1,
+        "medicine_id": 2,
+        "quantity": 20
+    },
+    {
+        "hospital_id": 2,
+        "medicine_id": 3,
+        "quantity": 15
     }
 ]

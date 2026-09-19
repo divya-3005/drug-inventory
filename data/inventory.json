@@ -2,6 +2,26 @@
     {
         "warehouse_id": 1,
         "medicine_id": 1,
-        "quantity": 389
+        "quantity": 1000
+    },
+    {
+        "warehouse_id": 1,
+        "medicine_id": 2,
+        "quantity": 300
+    },
+    {
+        "warehouse_id": 1,
+        "medicine_id": 3,
+        "quantity": 500
+    },
+    {
+        "warehouse_id": 2,
+        "medicine_id": 4,
+        "quantity": 400
+    },
+    {
+        "warehouse_id": 2,
+        "medicine_id": 5,
+        "quantity": 50
     }
 ]

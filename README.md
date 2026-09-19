@@ -75,6 +75,10 @@ Public health drug distribution networks frequently encounter stockouts, avoidab
 ```text
 drug-inventory/
 ├── main.py                      # Application entry point, CLI interface, and business logic
+├── seed_data.py                 # Script to populate/reset realistic demo datasets
+├── test_inventory.py            # Automated unit test suite
+├── requirements.txt             # Environment & dependency specifications
+├── LICENSE                      # MIT Open-Source License
 ├── README.md                    # Technical documentation
 ├── .gitignore                   # Version control exclusion rules
 └── data/                        # File-based persistence layer
@@ -114,7 +118,12 @@ python3 --version
    cd drug-inventory
    ```
 
-2. Launch the application:
+2. (Optional) Initialize or reset realistic demonstration data:
+   ```bash
+   python3 seed_data.py
+   ```
+
+3. Launch the application:
    ```bash
    python3 main.py
    ```
@@ -163,7 +172,17 @@ To protect against state corruption, the application enforces the following runt
 
 ## Verification and Testing
 
-The current implementation has been validated against an end-to-end integration test suite:
+### Automated Unit Tests
+
+Run the built-in test suite covering lookup helpers, movement logging schemas, boundary constraints, and date parsing:
+
+```bash
+python3 -m unittest test_inventory.py
+```
+
+### End-to-End Workflow Verification
+
+The application logic has been validated against a complete integration test cycle:
 
 1. **Intake**: Stocking 500 units into central storage.
 2. **Transfer**: Distributing 100 units to a district clinic (Warehouse: 400, Clinic: 100).

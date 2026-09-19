@@ -1,7 +1,12 @@
 [
     {
         "id": 1,
-        "name": "Central Warehouse",
-        "location": "Delhi"
+        "name": "Central Medical Depot",
+        "location": "New Delhi"
+    },
+    {
+        "id": 2,
+        "name": "Northern Regional Warehouse",
+        "location": "Chandigarh"
     }
 ]
